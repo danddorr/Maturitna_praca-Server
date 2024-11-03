@@ -1,11 +1,15 @@
 # consumer.py
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.exceptions import DenyConnection
 
 class MyConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.ws_path = self.scope['path']
         self.group_name = 'gate_status'
+        
+        if self.scope["user"].is_anonymous:
+            raise DenyConnection("Unauthorized")
 
         await self.channel_layer.group_add(
             self.group_name,

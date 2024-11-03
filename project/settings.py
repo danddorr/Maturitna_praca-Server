@@ -153,7 +153,7 @@ from datetime import timedelta
 
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('JWT',),
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=2),
 }
 
@@ -181,3 +181,5 @@ CHANNEL_LAYERS = {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
     },
 }
+
+AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
