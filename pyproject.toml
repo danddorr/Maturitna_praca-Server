@@ -11,11 +11,11 @@ djoser = "^2.2.3"
 drf-spectacular = "^0.27.2"
 drf-spectacular-sidecar = "^2024.6.1"
 django-cors-headers = "^4.4.0"
-paho-mqtt = "^2.1.0"
 gunicorn = "^22.0.0"
 python-dotenv = "^1.0.1"
 channels = {extras = ["daphne"], version = "^4.1.0"}
 websockets = "^13.1"
+channels-redis = "^4.2.0"
 
 
 [build-system]

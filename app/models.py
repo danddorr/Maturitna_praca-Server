@@ -19,12 +19,13 @@ GATE_STATES = (
     ('open_p', 'Open Pedestrian'),
     ('open_v', 'Open Vehicle'),
     ('closed', 'Closed'),
+    ('not_closed', 'Not Closed')
 )
 
 class GateStateHistory(models.Model):
     gate_state = models.CharField(max_length=20, choices=GATE_STATES)
     trigger = models.ForeignKey('TriggerHistory', on_delete=models.CASCADE, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.gate_state
@@ -34,11 +35,11 @@ class TriggerHistory(models.Model):
     trigger_agent = models.CharField(max_length=20, choices=TRIGGER_AGENTS)
     trigger_type = models.CharField(max_length=20, choices=TRIGGER_TYPES)
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
  
     @classmethod
     def get_trigger(cls):
-        trigger = cls.objects.filter(created_at__gte=timezone.now() - timedelta(seconds=10)).last()
+        trigger = cls.objects.filter(timestamp__gte=timezone.now() - timedelta(seconds=10)).last()
         if trigger:
             return trigger
         return None
