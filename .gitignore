@@ -45,3 +45,5 @@ dmypy.json
 
 # Others
 esp32_code/
+websocket_webtest.html
+websockets_test.py
