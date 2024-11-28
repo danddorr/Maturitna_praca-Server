@@ -31,7 +31,7 @@ class JWTAuthMiddleware(BaseMiddleware):
             except Exception as e:
                 # If the token is invalid, set the user as anonymous
                 scope["user"] = AnonymousUser()
-        elif special_token == settings.SPECIAL_TOKEN:
+        elif special_token == settings.ESP_SPECIAL_TOKEN:
             scope["user"] = User.objects.get(username="gate_controller")
         else:
             scope["user"] = AnonymousUser()
