@@ -1,7 +1,6 @@
 # middleware.py
 from django.contrib.auth.models import AnonymousUser
 from channels.middleware import BaseMiddleware
-from rest_framework_simplejwt.tokens import UntypedToken
 from jwt import decode as jwt_decode
 from django.conf import settings
 from urllib.parse import parse_qs
@@ -22,6 +21,7 @@ class JWTAuthMiddleware(BaseMiddleware):
         # Extract the token from the query string
         query_string = parse_qs(scope["query_string"].decode())
         token = query_string.get("token", None)
+        special_token = query_string.get("special_token", None)
 
         if token:
             try:
@@ -31,6 +31,8 @@ class JWTAuthMiddleware(BaseMiddleware):
             except Exception as e:
                 # If the token is invalid, set the user as anonymous
                 scope["user"] = AnonymousUser()
+        elif special_token == settings.SPECIAL_TOKEN:
+            scope["user"] = User.objects.get(username="gate_controller")
         else:
             scope["user"] = AnonymousUser()
         

@@ -193,3 +193,5 @@ CHANNEL_LAYERS = {
 }
 
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
+
+ESP_SPECIAL_TOKEN = os.getenv("ESP_SPECIAL_TOKEN")
