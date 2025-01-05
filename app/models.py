@@ -1,7 +1,8 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from datetime import timedelta
+from django.conf import settings
 
 TRIGGER_AGENTS = (
     ('api', 'Triggered by API'),
@@ -22,6 +23,25 @@ GATE_STATES = (
     ('not_closed', 'Not Closed')
 )
 
+class CustomUser(AbstractUser):
+    is_admin = models.BooleanField(default=False)
+    can_open_vehicle = models.BooleanField(default=False)
+    can_open_pedestrian = models.BooleanField(default=False)
+    can_close_gate = models.BooleanField(default=False)
+
+    def has_permission(self, trigger_type):
+        if trigger_type == 'start_v':
+            return self.can_open_vehicle
+        elif trigger_type == 'start_p':
+            return self.can_open_pedestrian
+        elif trigger_type == 'stop':
+            return self.can_close_gate
+        return False
+
+    def __str__(self):
+        return f"{self.username}"
+
+
 class GateStateHistory(models.Model):
     gate_state = models.CharField(max_length=20, choices=GATE_STATES)
     trigger = models.ForeignKey('TriggerHistory', on_delete=models.CASCADE, null=True)
@@ -31,7 +51,7 @@ class GateStateHistory(models.Model):
         return self.gate_state
 
 class TriggerHistory(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True)
     trigger_agent = models.CharField(max_length=20, choices=TRIGGER_AGENTS)
     trigger_type = models.CharField(max_length=20, choices=TRIGGER_TYPES)
 

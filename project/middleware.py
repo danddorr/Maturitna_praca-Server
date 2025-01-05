@@ -10,12 +10,15 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 @database_sync_to_async
-def get_user(user_id):
+def get_user(user_id=None, username=None):
     try:
-        return User.objects.get(id=user_id)
+        if user_id:
+            return User.objects.get(id=user_id)
+        elif username:
+            return User.objects.get(username=username)
     except User.DoesNotExist:
         return AnonymousUser()
-
+        
 class JWTAuthMiddleware(BaseMiddleware):
     async def __call__(self, scope, receive, send):
         # Extract the token from the query string
@@ -27,12 +30,12 @@ class JWTAuthMiddleware(BaseMiddleware):
             try:
                 # Decode the token and authenticate the user
                 decoded_data = jwt_decode(token[0], settings.SECRET_KEY, algorithms=["HS256"])
-                scope["user"] = await get_user(decoded_data["user_id"])
+                scope["user"] = await get_user(user_id = decoded_data["user_id"])
             except Exception as e:
                 # If the token is invalid, set the user as anonymous
                 scope["user"] = AnonymousUser()
-        elif special_token == settings.ESP_SPECIAL_TOKEN:
-            scope["user"] = User.objects.get(username="gate_controller")
+        elif special_token and special_token[0] == settings.ESP_SPECIAL_TOKEN:
+            scope["user"] = await get_user(username="gate_controller")
         else:
             scope["user"] = AnonymousUser()
         
