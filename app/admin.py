@@ -15,13 +15,19 @@ class TriggerHistoryAdmin(admin.ModelAdmin):
 
 class UserAdmin(BaseUserAdmin):
     fieldsets = (
-        (None, {'fields': ('username', 'password')}),
+        (None, {'fields': ('username', 'password', 'special_token')}),
         ('Permissions', {'fields': ('is_admin', 'can_open_vehicle', 'can_open_pedestrian', 'can_close_gate')}),
     )
     list_display = ('username', 'is_admin', 'can_open_vehicle', 'can_open_pedestrian', 'can_close_gate')
     search_fields = ('username',)
     list_filter = ('is_admin', 'can_open_vehicle', 'can_open_pedestrian', 'can_close_gate')
 
-admin.site.register(GateStateHistory, GateStateHistoryAdmin)
-admin.site.register(TriggerHistory, TriggerHistoryAdmin)
+class RegisteredECVAdmin(admin.ModelAdmin):
+    list_display = ('ecv', 'user', 'is_allowed')
+    list_filter = ('ecv', 'user', 'is_allowed')
+    search_fields = ('ecv', 'user', 'is_allowed')
+
+admin.site.register(GateStateLog, GateStateHistoryAdmin)
+admin.site.register(TriggerLog, TriggerHistoryAdmin)
 admin.site.register(CustomUser, UserAdmin)
+admin.site.register(RegisteredECV, RegisteredECVAdmin)

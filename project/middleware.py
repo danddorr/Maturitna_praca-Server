@@ -5,19 +5,24 @@ from jwt import decode as jwt_decode
 from django.conf import settings
 from urllib.parse import parse_qs
 from channels.db import database_sync_to_async
+from asgiref.sync import sync_to_async
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
 @database_sync_to_async
-def get_user(user_id=None, username=None):
+def get_user(user_id=None, special_token=None):
     try:
         if user_id:
             return User.objects.get(id=user_id)
-        elif username:
-            return User.objects.get(username=username)
+        elif special_token:
+            return User.objects.get(special_token=special_token)
     except User.DoesNotExist:
         return AnonymousUser()
+    
+@database_sync_to_async
+def check_special_token(special_token):
+    return User.objects.filter(special_token=special_token).exists()
         
 class JWTAuthMiddleware(BaseMiddleware):
     async def __call__(self, scope, receive, send):
@@ -34,8 +39,8 @@ class JWTAuthMiddleware(BaseMiddleware):
             except Exception as e:
                 # If the token is invalid, set the user as anonymous
                 scope["user"] = AnonymousUser()
-        elif special_token and special_token[0] == settings.ESP_SPECIAL_TOKEN:
-            scope["user"] = await get_user(username="gate_controller")
+        elif special_token and await check_special_token(special_token[0]):
+            scope["user"] = await get_user(special_token = special_token[0])
         else:
             scope["user"] = AnonymousUser()
         

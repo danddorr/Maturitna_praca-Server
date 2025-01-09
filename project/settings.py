@@ -184,29 +184,22 @@ CORS_ALLOWED_ORIGINS = [
 
 ASGI_APPLICATION = "project.asgi.application"
 
-"""CHANNEL_LAYERS = {
+CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [(os.getenv("REDIS_SERVER_ADDRESS", "127.0.0.1"), 6379)],  
         },
     },
-}"""
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
-    }
 }
 
-"""
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379",
+        "LOCATION": "redis://" + os.getenv("REDIS_SERVER_ADDRESS", "127.0.0.1") + ":6379",
+        "TIMEOUT": None,
     }
 }
-"""
+
 
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
-
-ESP_SPECIAL_TOKEN = os.getenv("ESP_SPECIAL_TOKEN")

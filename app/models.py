@@ -29,6 +29,8 @@ class CustomUser(AbstractUser):
     can_open_pedestrian = models.BooleanField(default=False)
     can_close_gate = models.BooleanField(default=False)
 
+    special_token = models.CharField(max_length=64, null=True, blank=True)
+
     def has_permission(self, trigger_type):
         if trigger_type == 'start_v':
             return self.can_open_vehicle
@@ -42,16 +44,17 @@ class CustomUser(AbstractUser):
         return f"{self.username}"
 
 
-class GateStateHistory(models.Model):
+class GateStateLog(models.Model):
     gate_state = models.CharField(max_length=20, choices=GATE_STATES)
-    trigger = models.ForeignKey('TriggerHistory', on_delete=models.CASCADE, null=True)
+    trigger = models.ForeignKey('TriggerLog', on_delete=models.CASCADE, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.gate_state
 
-class TriggerHistory(models.Model):
+class TriggerLog(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True)
+    ecv = models.ForeignKey('RegisteredECV', on_delete=models.CASCADE, null=True)
     trigger_agent = models.CharField(max_length=20, choices=TRIGGER_AGENTS)
     trigger_type = models.CharField(max_length=20, choices=TRIGGER_TYPES)
 
@@ -66,3 +69,13 @@ class TriggerHistory(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.trigger_agent} - {self.trigger_type}"
+    
+class RegisteredECV(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True)
+    ecv = models.CharField(max_length=10, unique=True)
+    is_allowed = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.ecv} - {self.is_allowed}"
