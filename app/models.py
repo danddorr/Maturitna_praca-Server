@@ -23,6 +23,11 @@ GATE_STATES = (
     ('not_closed', 'Not Closed')
 )
 
+CAMERA_POSITIONS = (
+    ('outside', 'Outside camera'),
+    ('inside', 'Inside camera')
+)
+
 class CustomUser(AbstractUser):
     is_admin = models.BooleanField(default=False)
     can_open_vehicle = models.BooleanField(default=False)
@@ -57,6 +62,7 @@ class TriggerLog(models.Model):
     ecv = models.ForeignKey('RegisteredECV', on_delete=models.CASCADE, null=True)
     trigger_agent = models.CharField(max_length=20, choices=TRIGGER_AGENTS)
     trigger_type = models.CharField(max_length=20, choices=TRIGGER_TYPES)
+    camera_position = models.CharField(max_length=50, choices=CAMERA_POSITIONS, null=True)
 
     timestamp = models.DateTimeField(auto_now_add=True)
  
@@ -78,4 +84,12 @@ class RegisteredECV(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.ecv} - {self.is_allowed}"
+        return f"{self.ecv}"
+    
+class ParkedVehicle(models.Model):
+    ecv = models.ForeignKey('RegisteredECV', on_delete=models.CASCADE)
+    entered_at = models.DateTimeField(auto_now_add=True)
+    exited_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.ecv}"

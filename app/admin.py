@@ -9,9 +9,9 @@ class GateStateHistoryAdmin(admin.ModelAdmin):
     search_fields = ('gate_state', 'timestamp')
 
 class TriggerHistoryAdmin(admin.ModelAdmin):
-    list_display = ('user', 'trigger_agent', 'trigger_type', 'timestamp')
-    list_filter = ('user', 'trigger_agent', 'trigger_type', 'timestamp')
-    search_fields = ('user', 'trigger_agent', 'trigger_type', 'timestamp')
+    list_display = ('user', 'trigger_type', 'trigger_agent', 'ecv', 'camera_position', 'timestamp')
+    list_filter = ('user', 'trigger_type', 'trigger_agent', 'ecv', 'camera_position', 'timestamp')
+    search_fields = ('user', 'trigger_type', 'trigger_agent', 'ecv', 'camera_position', 'timestamp')
 
 class UserAdmin(BaseUserAdmin):
     fieldsets = (
@@ -27,7 +27,13 @@ class RegisteredECVAdmin(admin.ModelAdmin):
     list_filter = ('ecv', 'user', 'is_allowed')
     search_fields = ('ecv', 'user', 'is_allowed')
 
+class ParkedVehicleAdmin(admin.ModelAdmin):
+    list_display = ('ecv', 'entered_at', 'exited_at')
+    list_filter = ('ecv', 'entered_at', 'exited_at')
+    search_fields = ('ecv', 'entered_at', 'exited_at')
+
 admin.site.register(GateStateLog, GateStateHistoryAdmin)
 admin.site.register(TriggerLog, TriggerHistoryAdmin)
 admin.site.register(CustomUser, UserAdmin)
 admin.site.register(RegisteredECV, RegisteredECVAdmin)
+admin.site.register(ParkedVehicle, ParkedVehicleAdmin)
