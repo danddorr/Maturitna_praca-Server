@@ -32,8 +32,14 @@ class ParkedVehicleAdmin(admin.ModelAdmin):
     list_filter = ('ecv', 'entered_at', 'exited_at')
     search_fields = ('ecv', 'entered_at', 'exited_at')
 
+class TemporaryAccessAdmin(admin.ModelAdmin):
+    list_display = ('user', 'ecv', 'link', 'valid_from', 'valid_until', 'open_vehicle', 'open_pedestrian', 'close_gate')
+    list_filter = ('user', 'ecv', 'link', 'valid_from', 'valid_until', 'open_vehicle', 'open_pedestrian', 'close_gate')
+    search_fields = ('user', 'ecv', 'link', 'valid_from', 'valid_until', 'open_vehicle', 'open_pedestrian', 'close_gate')
+
 admin.site.register(GateStateLog, GateStateHistoryAdmin)
 admin.site.register(TriggerLog, TriggerHistoryAdmin)
 admin.site.register(CustomUser, UserAdmin)
 admin.site.register(RegisteredECV, RegisteredECVAdmin)
 admin.site.register(ParkedVehicle, ParkedVehicleAdmin)
+admin.site.register(TemporaryAccess, TemporaryAccessAdmin)

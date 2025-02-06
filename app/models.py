@@ -93,3 +93,19 @@ class ParkedVehicle(models.Model):
 
     def __str__(self):
         return f"{self.ecv}"
+
+class TemporaryAccess(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    ecv = models.ForeignKey('RegisteredECV', on_delete=models.CASCADE, null=True)
+    link = models.CharField(max_length=32, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    valid_from = models.DateTimeField(null=True)
+    valid_until = models.DateTimeField(null=True)
+    
+    open_vehicle = models.IntegerField(default=0) #-1 means unlimited
+    open_pedestrian = models.IntegerField(default=0)
+    close_gate = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.user.username}"

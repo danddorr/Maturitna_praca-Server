@@ -180,19 +180,26 @@ SPECTACULAR_SETTINGS = {
 
 CORS_ALLOWED_ORIGINS = [
     os.getenv("FRONTEND_ADDRESS", "http://localhost:3000"),
+    "http://127.0.0.1:5500",
 ]
 
 ASGI_APPLICATION = "project.asgi.application"
 
-CHANNEL_LAYERS = {
+"""CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [(os.getenv("REDIS_SERVER_ADDRESS", "127.0.0.1"), 6379)],  
         },
     },
+}"""
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
 }
 
+"""
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
@@ -200,6 +207,6 @@ CACHES = {
         "TIMEOUT": None,
     }
 }
-
+"""
 
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]

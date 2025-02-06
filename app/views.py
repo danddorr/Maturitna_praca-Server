@@ -15,17 +15,33 @@ class GeneralInfoView(APIView):
 
     def get(self, request):
         gate_state = cache.get("gate_state")
+        if gate_state is None:
+            gate_state = "unknown"  # Provide a default value if gate_state is None
 
-        data = {
-            "gate_state": gate_state,
+        permissions_data = {
             "is_admin": request.user.is_admin,
             "can_open_vehicle": request.user.can_open_vehicle,
             "can_open_pedestrian": request.user.can_open_pedestrian,
             "can_close_gate": request.user.can_close_gate
         }
 
+        data = {
+            "gate_state": gate_state,
+            "permissions": permissions_data
+        }
+
         serializer = GeneralInfoSerializer(data=data)
         if serializer.is_valid():
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
+    
+class TemporaryAccessCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, *args, **kwargs):
+        serializer = TemporaryAccessCreateSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
