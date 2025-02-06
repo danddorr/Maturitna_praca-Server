@@ -3,14 +3,10 @@ from rest_framework import serializers
 from .models import TemporaryAccess, RegisteredECV, CustomUser
 import secrets
 
-class PermissionsSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['is_admin', 'can_open_vehicle', 'can_open_pedestrian', 'can_close_gate']
-
-class GeneralInfoSerializer(serializers.Serializer):
-    gate_state = serializers.CharField()
-    permissions = PermissionsSerializer(source='*')
+        fields = ['username', 'is_admin', 'can_open_vehicle', 'can_open_pedestrian', 'can_close_gate']
 
 class TemporaryAccessCreateSerializer(serializers.Serializer):  
     access_type = serializers.CharField()

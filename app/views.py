@@ -16,9 +16,10 @@ class GeneralInfoView(APIView):
     def get(self, request):
         gate_state = cache.get("gate_state")
         if gate_state is None:
-            gate_state = "unknown"  # Provide a default value if gate_state is None
+            gate_state = "unknown" 
 
-        permissions_data = {
+        user_data = {
+            "username": request.user.username,
             "is_admin": request.user.is_admin,
             "can_open_vehicle": request.user.can_open_vehicle,
             "can_open_pedestrian": request.user.can_open_pedestrian,
@@ -27,13 +28,10 @@ class GeneralInfoView(APIView):
 
         data = {
             "gate_state": gate_state,
-            "permissions": permissions_data
+            "user": user_data
         }
 
-        serializer = GeneralInfoSerializer(data=data)
-        if serializer.is_valid():
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
+        return Response(data, status=status.HTTP_200_OK)
     
 class TemporaryAccessCreateView(APIView):
     permission_classes = [IsAuthenticated]
