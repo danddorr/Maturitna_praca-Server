@@ -8,7 +8,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['username', 'is_admin', 'can_open_vehicle', 'can_open_pedestrian', 'can_close_gate']
 
-class TemporaryAccessCreateSerializer(serializers.Serializer):  
+class TemporaryAccessDetailSerializer(serializers.Serializer):  
     access_type = serializers.CharField()
     ecv = serializers.CharField(required=False)
     valid_from = serializers.DateTimeField()
@@ -17,16 +17,26 @@ class TemporaryAccessCreateSerializer(serializers.Serializer):
     open_pedestrian = serializers.IntegerField()
     close_gate = serializers.IntegerField()
 
-    def validate(self, data):
-        if data.get('access_type') == "link":
-            data['link'] = self.generate_link()
-        
+    def validate(self, data):        
         errors = {}
 
         if data.get('access_type') == "ecv" and not data.get('ecv'):
             errors['ecv'] = "ECV is required"
         
         user = self.context['request'].user
+        if data.get('open_vehicle') == -1 or data.get('open_pedestrian') == -1 or data.get('close_gate') == -1:
+            if not user.is_admin:
+                errors['open_vehicle'] = "User does not have permission to grant unlimited access"
+                errors['open_pedestrian'] = "User does not have permission to grant unlimited access"
+                errors['close_gate'] = "User does not have permission to grant unlimited access"
+
+        if data.get('open_vehicle') > 10:
+            errors['open_vehicle'] = "Maximum value for opening gate for vehicle is 10"
+        if data.get('open_pedestrian') > 10:
+            errors['open_pedestrian'] = "Maximum value for opening gate for pedestrian is 10"
+        if data.get('close_gate') > 10:
+            errors['close_gate'] = "Maximum value for closing gate is 10"
+
         if data.get('open_vehicle') and not user.can_open_vehicle:
             errors['open_vehicle'] = "User does not have permission to open vehicle gate"
         if data.get('open_pedestrian') and not user.can_open_pedestrian:
@@ -40,18 +50,25 @@ class TemporaryAccessCreateSerializer(serializers.Serializer):
         return data
     
     def generate_link(self):
-        return secrets.token_urlsafe(24) 
+        return secrets.token_urlsafe(12) 
 
     def create(self, validated_data):
+        link = self.generate_link()
+
         user = self.context['request'].user
-        ecv = None
+
         if validated_data.get('access_type') == "ecv":
-            ecv = RegisteredECV.objects.get(ecv=validated_data['ecv'])
+            ecv = RegisteredECV.objects.filter(ecv=validated_data['ecv']).first()
+            if ecv and ecv.user != user:
+                raise serializers.ValidationError({"ecv": "This ECV is registered by another user"})
+            
+            if TemporaryAccess.objects.filter(user=user, ecv=ecv).exists():
+                raise serializers.ValidationError({"ecv": "Temporary access for this ECV already exists"})
         
         return TemporaryAccess.objects.create(
             user=user,
-            ecv=ecv,
-            link=validated_data.get('link'),
+            ecv=validated_data.get('ecv', None),
+            link=link,
             valid_from=validated_data['valid_from'],
             valid_until=validated_data['valid_until'],
             open_vehicle=validated_data['open_vehicle'],
@@ -70,8 +87,9 @@ class TemporaryAccessCreateSerializer(serializers.Serializer):
     
     def to_representation(self, instance): #converts the instance to a dictionary
         return {
+            "access_type": "ecv" if instance.ecv else "link",
             "link": instance.link,
-            "ecv": instance.ecv.ecv if instance.ecv else None,
+            "ecv": instance.ecv if instance.ecv else None,
             "valid_from": instance.valid_from,
             "valid_until": instance.valid_until,
             "open_vehicle": instance.open_vehicle,

@@ -96,7 +96,7 @@ class ParkedVehicle(models.Model):
 
 class TemporaryAccess(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    ecv = models.ForeignKey('RegisteredECV', on_delete=models.CASCADE, null=True)
+    ecv = models.CharField(max_length=10, null=True)
     link = models.CharField(max_length=32, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
