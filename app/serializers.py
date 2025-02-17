@@ -1,5 +1,6 @@
 # serializers.py
 from rest_framework import serializers
+from django.utils import timezone
 from .models import TemporaryAccess, RegisteredECV, CustomUser
 import secrets
 
@@ -8,7 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['username', 'is_admin', 'can_open_vehicle', 'can_open_pedestrian', 'can_close_gate']
 
-class TemporaryAccessDetailSerializer(serializers.Serializer):  
+class TemporaryAccessSerializer(serializers.Serializer):  
     access_type = serializers.CharField()
     ecv = serializers.CharField(required=False)
     valid_from = serializers.DateTimeField()
@@ -85,6 +86,15 @@ class TemporaryAccessDetailSerializer(serializers.Serializer):
         instance.save()
         return instance
     
+    def get_status(self, instance):
+        if instance.valid_from > timezone.now():
+            return "Pending"
+        if instance.valid_until < timezone.now():
+            return "Expired"
+        if instance.open_vehicle == 0 and instance.open_pedestrian == 0 and instance.close_gate == 0:
+            return "Revoked"
+        return "Active"
+    
     def to_representation(self, instance): #converts the instance to a dictionary
         return {
             "access_type": "ecv" if instance.ecv else "link",
@@ -94,7 +104,8 @@ class TemporaryAccessDetailSerializer(serializers.Serializer):
             "valid_until": instance.valid_until,
             "open_vehicle": instance.open_vehicle,
             "open_pedestrian": instance.open_pedestrian,
-            "close_gate": instance.close_gate
+            "close_gate": instance.close_gate,
+            "status": self.get_status(instance)
         }
     #dummy json
     """

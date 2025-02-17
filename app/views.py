@@ -39,11 +39,11 @@ class TemporaryAccessView(APIView):
     def get(self, request):
         user = request.user
         access = TemporaryAccess.objects.filter(user=user)
-        serializer = TemporaryAccessDetailSerializer(access, many=True, context={'request': request})
+        serializer = TemporaryAccessSerializer(access, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request, *args, **kwargs):
-        serializer = TemporaryAccessDetailSerializer(data=request.data, context={'request': request})
+        serializer = TemporaryAccessSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -55,7 +55,7 @@ class TemporaryAccessDetailView(APIView):
     def get(self, request, link):
         access = TemporaryAccess.objects.filter(link=link).first()
         if access:
-            serializer = TemporaryAccessDetailSerializer(access, context={'request': request})
+            serializer = TemporaryAccessSerializer(access, context={'request': request})
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response({'message': 'Temporary access not found'}, status=status.HTTP_404_NOT_FOUND)
     
@@ -69,7 +69,7 @@ class TemporaryAccessDetailView(APIView):
     def patch(self, request, link):
         access = TemporaryAccess.objects.filter(link=link).first()
         if access:
-            serializer = TemporaryAccessDetailSerializer(access, data=request.data, partial=True, context={'request': request})
+            serializer = TemporaryAccessSerializer(access, data=request.data, partial=True, context={'request': request})
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -79,7 +79,7 @@ class TemporaryAccessDetailView(APIView):
     def put(self, request, link):
         access = TemporaryAccess.objects.filter(link=link).first()
         if access:
-            serializer = TemporaryAccessDetailSerializer(access, data=request.data, context={'request': request})
+            serializer = TemporaryAccessSerializer(access, data=request.data, context={'request': request})
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
