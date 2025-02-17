@@ -63,7 +63,7 @@ class TemporaryAccessSerializer(serializers.Serializer):
             if ecv and ecv.user != user:
                 raise serializers.ValidationError({"ecv": "This ECV is registered by another user"})
             
-            if TemporaryAccess.objects.filter(user=user, ecv=ecv).exists():
+            if TemporaryAccess.objects.filter(user=user, ecv=validated_data['ecv']).exists():
                 raise serializers.ValidationError({"ecv": "Temporary access for this ECV already exists"})
         
         return TemporaryAccess.objects.create(
