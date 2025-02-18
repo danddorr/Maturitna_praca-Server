@@ -65,6 +65,13 @@ class TemporaryAccessSerializer(serializers.Serializer):
             
             if TemporaryAccess.objects.filter(user=user, ecv=validated_data['ecv']).exists():
                 raise serializers.ValidationError({"ecv": "Temporary access for this ECV already exists"})
+            
+        if validated_data.get('open_vehicle') and not user.can_open_vehicle:
+            raise serializers.ValidationError({"open_vehicle": "You do not have permission to grant open vehicle gate access"})
+        if validated_data.get('open_pedestrian') and not user.can_open_pedestrian:
+            raise serializers.ValidationError({"open_pedestrian": "You do not have permission to grant open pedestrian gate access"})
+        if validated_data.get('close_gate') and not user.can_close_gate:
+            raise serializers.ValidationError({"close_gate": "You do not have permission to grant close gate access"})
         
         return TemporaryAccess.objects.create(
             user=user,

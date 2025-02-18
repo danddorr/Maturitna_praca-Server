@@ -9,9 +9,9 @@ class GateStateHistoryAdmin(admin.ModelAdmin):
     search_fields = ('gate_state', 'timestamp')
 
 class TriggerHistoryAdmin(admin.ModelAdmin):
-    list_display = ('user', 'trigger_type', 'trigger_agent', 'ecv', 'camera_position', 'timestamp')
-    list_filter = ('user', 'trigger_type', 'trigger_agent', 'ecv', 'camera_position', 'timestamp')
-    search_fields = ('user', 'trigger_type', 'trigger_agent', 'ecv', 'camera_position', 'timestamp')
+    list_display = ('user', 'trigger_type', 'trigger_agent', 'ecv', 'camera_position', 'timestamp', 'temporary_access')
+    list_filter = ('user', 'trigger_type', 'trigger_agent', 'ecv', 'camera_position', 'timestamp', 'temporary_access')
+    search_fields = ('user', 'trigger_type', 'trigger_agent', 'ecv', 'camera_position', 'timestamp', 'temporary_access')
 
 class UserAdmin(BaseUserAdmin):
     fieldsets = (

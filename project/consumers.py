@@ -5,6 +5,7 @@ from app.models import *
 from asgiref.sync import sync_to_async
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
+from urllib.parse import parse_qs
 
 User = get_user_model()
 
@@ -18,7 +19,19 @@ class GateConsumer(AsyncWebsocketConsumer):
         print(self.scope["user"].username)
 
         if self.scope["user"].is_anonymous:
-            raise DenyConnection("Unauthorized")
+            print("Anonymous")
+            query_string = parse_qs(self.scope["query_string"].decode())
+            temp_access_link = query_string.get("temp_access_link", None)
+            print(temp_access_link)
+            if temp_access_link:
+                temp_access = await sync_to_async(lambda: TemporaryAccess.objects.filter(link=temp_access_link[0]).first())()
+                if temp_access:
+                    self.scope["user"] = await sync_to_async(lambda: temp_access.user)()
+                    self.scope["temp_access"] = await sync_to_async(lambda: temp_access)()
+                else:
+                    raise DenyConnection("Unauthorized")
+            else:
+                raise DenyConnection("Unauthorized")
         
         self.group_name = "gate_controller" if self.scope["user"].username == "gate_controller" else "gate_client"
 
@@ -87,9 +100,20 @@ class GateConsumer(AsyncWebsocketConsumer):
                     await self.send(text_data=json.dumps({'type': 'error', 'message': 'Unauthorized'}))
                     return
                 
+                temp_access = self.scope.get("temp_access", None)
+                
+                if temp_access:
+                    errors = await sync_to_async(lambda: temp_access.validate(message))()
+                    if errors:
+                        await self.send(text_data=json.dumps({'type': 'error', 'message': errors}))
+                        return
+                
+                await sync_to_async(temp_access.decrement)(message)
+                
                 await sync_to_async(TriggerLog.objects.create)(
                     trigger_type=message,
                     user=self.scope["user"],
+                    temporary_access=self.scope.get("temp_access", None),
                     trigger_agent="api"
                 ) 
                 
