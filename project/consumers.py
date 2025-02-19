@@ -19,15 +19,14 @@ class GateConsumer(AsyncWebsocketConsumer):
         print(self.scope["user"].username)
 
         if self.scope["user"].is_anonymous:
-            print("Anonymous")
             query_string = parse_qs(self.scope["query_string"].decode())
             temp_access_link = query_string.get("temp_access_link", None)
-            print(temp_access_link)
+
             if temp_access_link:
                 temp_access = await sync_to_async(lambda: TemporaryAccess.objects.filter(link=temp_access_link[0]).first())()
                 if temp_access:
                     self.scope["user"] = await sync_to_async(lambda: temp_access.user)()
-                    self.scope["temp_access"] = await sync_to_async(lambda: temp_access)()
+                    self.scope["temp_access_link"] = temp_access_link[0]
                 else:
                     raise DenyConnection("Unauthorized")
             else:
@@ -100,20 +99,23 @@ class GateConsumer(AsyncWebsocketConsumer):
                     await self.send(text_data=json.dumps({'type': 'error', 'message': 'Unauthorized'}))
                     return
                 
-                temp_access = self.scope.get("temp_access", None)
+                temp_access_link = self.scope.get("temp_access_link", None)
+                temp_access = None
                 
-                if temp_access:
+                if temp_access_link:
+                    temp_access = await sync_to_async(lambda: TemporaryAccess.objects.filter(link=temp_access_link).first())()
+
                     errors = await sync_to_async(lambda: temp_access.validate(message))()
                     if errors:
                         await self.send(text_data=json.dumps({'type': 'error', 'message': errors}))
                         return
                 
-                await sync_to_async(temp_access.decrement)(message)
+                    await sync_to_async(temp_access.decrement)(message)
                 
                 await sync_to_async(TriggerLog.objects.create)(
                     trigger_type=message,
                     user=self.scope["user"],
-                    temporary_access=self.scope.get("temp_access", None),
+                    temporary_access=temp_access,
                     trigger_agent="api"
                 ) 
                 
