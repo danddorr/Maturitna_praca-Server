@@ -50,7 +50,10 @@ class TemporaryAccessView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 class TemporaryAccessDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return []
+        return [IsAuthenticated()]
 
     def get(self, request, link):
         access = TemporaryAccess.objects.filter(link=link).first()
