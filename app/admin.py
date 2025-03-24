@@ -16,11 +16,11 @@ class TriggerHistoryAdmin(admin.ModelAdmin):
 class UserAdmin(BaseUserAdmin):
     fieldsets = (
         (None, {'fields': ('username', 'password', 'special_token')}),
-        ('Permissions', {'fields': ('is_admin', 'can_open_vehicle', 'can_open_pedestrian', 'can_close_gate')}),
+        ('Permissions', {'fields': ('is_admin', 'can_open_vehicle', 'can_open_pedestrian')}),
     )
-    list_display = ('username', 'is_admin', 'can_open_vehicle', 'can_open_pedestrian', 'can_close_gate')
+    list_display = ('username', 'is_admin', 'can_open_vehicle', 'can_open_pedestrian')
     search_fields = ('username',)
-    list_filter = ('is_admin', 'can_open_vehicle', 'can_open_pedestrian', 'can_close_gate')
+    list_filter = ('is_admin', 'can_open_vehicle', 'can_open_pedestrian')
 
 class RegisteredECVAdmin(admin.ModelAdmin):
     list_display = ('ecv', 'user', 'is_allowed')
@@ -33,9 +33,9 @@ class ParkedVehicleAdmin(admin.ModelAdmin):
     search_fields = ('ecv', 'entered_at', 'exited_at')
 
 class TemporaryAccessAdmin(admin.ModelAdmin):
-    list_display = ('user', 'ecv', 'link', 'valid_from', 'valid_until', 'open_vehicle', 'open_pedestrian', 'close_gate')
-    list_filter = ('user', 'ecv', 'link', 'valid_from', 'valid_until', 'open_vehicle', 'open_pedestrian', 'close_gate')
-    search_fields = ('user', 'ecv', 'link', 'valid_from', 'valid_until', 'open_vehicle', 'open_pedestrian', 'close_gate')
+    list_display = ('user', 'ecv', 'link', 'valid_from', 'valid_until', 'open_vehicle', 'open_pedestrian')
+    list_filter = ('user', 'ecv', 'link', 'valid_from', 'valid_until', 'open_vehicle', 'open_pedestrian')
+    search_fields = ('user', 'ecv', 'link', 'valid_from', 'valid_until', 'open_vehicle', 'open_pedestrian')
 
 admin.site.register(GateStateLog, GateStateHistoryAdmin)
 admin.site.register(TriggerLog, TriggerHistoryAdmin)

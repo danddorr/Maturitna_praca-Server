@@ -4,35 +4,34 @@ from django.utils import timezone
 from datetime import timedelta
 from django.conf import settings
 
-TRIGGER_AGENTS = (
-    ('api', 'API'),
-    ('rpi', 'RPI'),
-    ('manual', 'Manual'),
-)
+TRIGGER_AGENTS = {
+    'user': 'User',
+    'temp': 'Temporary Access',
+    'rpi': 'RPI',
+    'manual': 'Manual',
+}
 
-TRIGGER_TYPES = (
-    ('start_v', 'Start opening Vehicle'),
-    ('stop', 'Stop opening'),
-    ('start_p', 'Start opening Pedestrian'),
-)
+TRIGGER_TYPES = {
+    'start_v': 'Start opening Vehicle',
+    'start_p': 'Start opening Pedestrian',
+}
 
-GATE_STATES = (
-    ('open_p', 'Open Pedestrian'),
-    ('open_v', 'Open Vehicle'),
-    ('closed', 'Closed'),
-    ('not_closed', 'Not Closed')
-)
+GATE_STATES = {
+    'open_p': 'Open Pedestrian',
+    'open_v': 'Open Vehicle',
+    'closed': 'Closed',
+    'not_closed': 'Not Closed',
+}
 
-CAMERA_POSITIONS = (
-    ('outside', 'Outside camera'),
-    ('inside', 'Inside camera')
-)
+CAMERA_POSITIONS = {
+    'outside': 'Outside camera',
+    'inside': 'Inside camera',
+}
 
 class CustomUser(AbstractUser):
     is_admin = models.BooleanField(default=False)
     can_open_vehicle = models.BooleanField(default=False)
     can_open_pedestrian = models.BooleanField(default=False)
-    can_close_gate = models.BooleanField(default=False)
 
     special_token = models.CharField(max_length=64, null=True, blank=True)
 
@@ -41,8 +40,6 @@ class CustomUser(AbstractUser):
             return self.can_open_vehicle
         elif trigger_type == 'start_p':
             return self.can_open_pedestrian
-        elif trigger_type == 'stop':
-            return self.can_close_gate
         return False
 
     def __str__(self):
@@ -50,7 +47,7 @@ class CustomUser(AbstractUser):
 
 
 class GateStateLog(models.Model):
-    gate_state = models.CharField(max_length=20, choices=GATE_STATES)
+    gate_state = models.CharField(max_length=20, choices=GATE_STATES.items())
     trigger = models.ForeignKey('TriggerLog', on_delete=models.CASCADE, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
@@ -59,14 +56,14 @@ class GateStateLog(models.Model):
 
 class TriggerLog(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True)
-    ecv = models.ForeignKey('RegisteredECV', on_delete=models.CASCADE, null=True)
-    temporary_access = models.ForeignKey('TemporaryAccess', on_delete=models.CASCADE, null=True)
-    trigger_agent = models.CharField(max_length=20, choices=TRIGGER_AGENTS)
-    trigger_type = models.CharField(max_length=20, choices=TRIGGER_TYPES)
-    camera_position = models.CharField(max_length=50, choices=CAMERA_POSITIONS, null=True)
+    ecv = models.ForeignKey('RegisteredECV', on_delete=models.SET_NULL, null=True)
+    temporary_access = models.ForeignKey('TemporaryAccess', on_delete=models.SET_NULL, null=True)
+    trigger_agent = models.CharField(max_length=20, choices=TRIGGER_AGENTS.items())
+    trigger_type = models.CharField(max_length=20, choices=TRIGGER_TYPES.items())
+    camera_position = models.CharField(max_length=50, choices=CAMERA_POSITIONS.items(), null=True)
 
     timestamp = models.DateTimeField(auto_now_add=True)
- 
+    
     @classmethod
     def get_trigger(cls):
         trigger = cls.objects.filter(timestamp__gte=timezone.now() - timedelta(seconds=10)).last()
@@ -87,10 +84,10 @@ class RegisteredECV(models.Model):
     def __str__(self):
         return f"{self.ecv}"
     
-class ParkedVehicle(models.Model):
-    ecv = models.ForeignKey('RegisteredECV', on_delete=models.CASCADE)
-    entered_at = models.DateTimeField(auto_now_add=True)
-    exited_at = models.DateTimeField(null=True, blank=True)
+class ParkedVehicle(models.Model):                                          ### nahradit za triggerlog
+    ecv = models.CharField(max_length=10)                      ### nahradit za triggerlog  
+    entered_at = models.DateTimeField(auto_now_add=True)                    ### nahradit za triggerlog
+    exited_at = models.DateTimeField(null=True, blank=True)                 ### nahradit za triggerlog
 
     def __str__(self):
         return f"{self.ecv}"
@@ -106,7 +103,6 @@ class TemporaryAccess(models.Model):
     
     open_vehicle = models.IntegerField(default=0) #-1 means unlimited
     open_pedestrian = models.IntegerField(default=0)
-    close_gate = models.IntegerField(default=0)
 
     def validate(self, trigger_type):
         errors = {}
@@ -120,8 +116,6 @@ class TemporaryAccess(models.Model):
             errors['open_vehicle'] = "You do not have permission to open gate for vehicle."
         elif trigger_type == 'start_p' and self.open_pedestrian == 0:
             errors['open_pedestrian'] = "You do not have permission to open gate for pedestrian."
-        elif trigger_type == 'stop' and self.close_gate == 0:
-            errors['close_gate'] = "You do not have permission to close gate."
         
         return errors
     
@@ -130,8 +124,6 @@ class TemporaryAccess(models.Model):
             self.open_vehicle -= 1
         elif trigger_type == 'start_p' and self.open_pedestrian > 0:
             self.open_pedestrian -= 1
-        elif trigger_type == 'stop' and self.close_gate > 0:
-            self.close_gate -= 1
         self.save()
 
     def __str__(self):

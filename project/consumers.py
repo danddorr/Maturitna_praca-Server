@@ -9,38 +9,42 @@ from urllib.parse import parse_qs
 
 User = get_user_model()
 
-gate_states = list(map(lambda x: x[0], GATE_STATES))
-trigger_types = list(map(lambda x: x[0], TRIGGER_TYPES))
-camera_positions = list(map(lambda x: x[0], CAMERA_POSITIONS))
-
 class GateConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.group_name = "consumer"
-        print(self.scope["user"].username)
+        query_string = parse_qs(self.scope["query_string"].decode())
+        temp_access_link = query_string.get("temp_access_link", None)
 
-        if self.scope["user"].is_anonymous:
-            query_string = parse_qs(self.scope["query_string"].decode())
-            temp_access_link = query_string.get("temp_access_link", None)
-
-            if temp_access_link:
-                temp_access = await sync_to_async(lambda: TemporaryAccess.objects.filter(link=temp_access_link[0]).first())()
-                if temp_access:
-                    self.scope["user"] = await sync_to_async(lambda: temp_access.user)()
-                    self.scope["temp_access_link"] = temp_access_link[0]
-                else:
-                    raise DenyConnection("Unauthorized")
+        if temp_access_link:
+            temp_access = await sync_to_async(lambda: TemporaryAccess.objects.filter(link=temp_access_link[0]).first())()
+            if temp_access:
+                self.scope["temp_access"] = temp_access
             else:
                 raise DenyConnection("Unauthorized")
-        
-        self.group_name = "gate_controller" if self.scope["user"].username == "gate_controller" else "gate_client"
+                
+        if self.scope["user"].username == "gate_controller":
+            self.group_name = "gate_controller"
+            self.scope["agent"] = "manual"
+        elif self.scope["user"].username == "rpi_controller":
+            self.group_name = "rpi_controller"
+            self.scope["agent"] = "rpi"
+        elif not self.scope["user"].is_anonymous:
+            self.group_name = "gate_client"
+            self.scope["agent"] = "user"
+        elif temp_access:
+            self.group_name = "gate_client"
+            self.scope["agent"] = "temp"
+            self.scope["user"] = await sync_to_async(lambda: temp_access.user)()
+        else:
+            self.group_name = "Unauthorized"
+            raise DenyConnection("Unauthorized")
 
         await self.channel_layer.group_add(
             self.group_name,
             self.channel_name
         )
-
+ 
         await self.accept()
-        await self.send(text_data=json.dumps({'type': 'success', 'message': f'Connected to {self.group_name} as {self.scope["user"].username}'}))
+        await self.send(text_data=json.dumps({'type': 'success', 'message': f'Connected to {self.group_name} as {self.scope["user"].username if self.scope["agent"] == "user" else "temp_access"}'}))
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
@@ -68,7 +72,7 @@ class GateConsumer(AsyncWebsocketConsumer):
                     await self.send(text_data=json.dumps({'type': 'error', 'message': 'Unauthorized'}))
                     return
                 
-                if not message in gate_states:
+                if not message in GATE_STATES:
                     await self.send(text_data=json.dumps({'type': 'error', 'message': 'Invalid data'}))
                     return
                 
@@ -91,7 +95,7 @@ class GateConsumer(AsyncWebsocketConsumer):
                 )
 
             case "trigger": 
-                if not message in trigger_types:   
+                if not message in TRIGGER_TYPES:   
                     await self.send(text_data=json.dumps({'type': 'error', 'message': 'Invalid data'}))
                     return
                 
@@ -99,12 +103,9 @@ class GateConsumer(AsyncWebsocketConsumer):
                     await self.send(text_data=json.dumps({'type': 'error', 'message': 'Unauthorized'}))
                     return
                 
-                temp_access_link = self.scope.get("temp_access_link", None)
-                temp_access = None
-                
-                if temp_access_link:
-                    temp_access = await sync_to_async(lambda: TemporaryAccess.objects.filter(link=temp_access_link).first())()
+                temp_access = self.scope.get("temp_access", None)
 
+                if temp_access:
                     errors = await sync_to_async(lambda: temp_access.validate(message))()
                     if errors:
                         await self.send(text_data=json.dumps({'type': 'error', 'message': errors}))
@@ -116,7 +117,7 @@ class GateConsumer(AsyncWebsocketConsumer):
                     trigger_type=message,
                     user=self.scope["user"],
                     temporary_access=temp_access,
-                    trigger_agent="api"
+                    trigger_agent=self.scope["agent"]
                 ) 
                 
                 print("Triggered by client")
@@ -131,77 +132,58 @@ class GateConsumer(AsyncWebsocketConsumer):
                 await self.send(text_data=json.dumps({'type': 'success', 'message': 'Triggered'}))
 
             case "ecv_detected":
-                camera_position = json_data.get('camera_position', '')
-
-                if not camera_position or not camera_position in camera_positions:
-                    await self.send(text_data=json.dumps({'type': 'error', 'message': 'Invalid data'}))
-                    return
-                
                 if self.scope["user"].username != "rpi_controller":
                     await self.send(text_data=json.dumps({'type': 'error', 'message': 'Unauthorized'}))
                     return
                 
-                registered_ecv = await sync_to_async(lambda: RegisteredECV.objects.filter(ecv=message).first())()
-                
-                if not registered_ecv:
-                    await self.send(text_data=json.dumps({'type': 'error', 'message': 'Ecv not registered'}))
-                    return
-                
-                if camera_position == "outside":
-                    if not await sync_to_async(lambda x: registered_ecv.user.has_permission(x))("start_v") or not await sync_to_async(lambda: registered_ecv.is_allowed)():
-                        await self.send(text_data=json.dumps({'type': 'error', 'message': 'Unauthorized'}))
-                        return
-                    
-                    parked_vehicle = await sync_to_async(lambda: ParkedVehicle.objects.filter(ecv=registered_ecv).order_by("entered_at").last())()
+                camera_position = json_data.get('camera_position', '')
 
-                    if parked_vehicle:
-                        time_inside = timezone.now() - parked_vehicle.entered_at
-                        if time_inside.total_seconds() < 15:
-                            await self.send(text_data=json.dumps({'type': 'error', 'message': 'Vehicle has not been inside long enough'}))
-                            return
-                    
-                    #ak bolo zaparkovane vozidlo poslednych 15 sekund a naskenovala ho vonkajsia kamera tak ignoruj
-                    was_parked = await sync_to_async(ParkedVehicle.objects.filter(ecv=registered_ecv, exited_at__gte=timezone.now() - timedelta(seconds=15)).exists)()
-                    if was_parked:
-                        await self.send(text_data=json.dumps({'type': 'error', 'message': 'Vehicle is just leaving'}))
+                if not camera_position or not camera_position in CAMERA_POSITIONS:
+                    await self.send(text_data=json.dumps({'type': 'error', 'message': 'Invalid data'}))
+                    return
+
+                ecv_object = await sync_to_async(lambda: RegisteredECV.objects.filter(ecv=message).first())()
+                ecv_type = "registered_ecv" if ecv_object else "temp_ecv"
+                
+                if ecv_type == "temp_ecv":
+                    ecv_object = await sync_to_async(lambda: TemporaryAccess.objects.filter(ecv=message).first())()
+                    if not ecv_object:
+                        await self.send(text_data=json.dumps({'type': 'error', 'message': 'Ecv not registered'}))
                         return
+
+                if camera_position == "outside":
+                    if (ecv_type == "registered_ecv" and not await sync_to_async(lambda: ecv_object.is_allowed)()) or (ecv_type == "temp_ecv" and ecv_object.validate("start_v") ): 
+                        await self.send(text_data=json.dumps({'type': 'error', 'message': 'Unauthorized'}))
+                        return 
+                    
+                    if ecv_type == "temp_ecv":
+                        await sync_to_async(ecv_object.decrement)("start_v")
                     
                     await sync_to_async(ParkedVehicle.objects.create)(
-                        ecv=registered_ecv
+                        ecv=ecv_object.ecv
                     )
-                    #################nefuguje dako vzdy to zapise 3x ked to vidi
-                elif camera_position == "inside":
-                    #zobrat len uplne najnovsi zaznam o zaparkovani tohto vozidla zoradene podla entered_at
-                    parked_vehicle = await sync_to_async(lambda: ParkedVehicle.objects.filter(ecv=registered_ecv).order_by("entered_at").last())()
-
-                    if parked_vehicle:
-                        time_inside = timezone.now() - parked_vehicle.entered_at
-                        if time_inside.total_seconds() < 15:
-                            await self.send(text_data=json.dumps({'type': 'error', 'message': 'Vehicle has not been inside long enough'}))
-                            return
                     
-                    print(await sync_to_async(lambda: parked_vehicle.ecv)())
-                    print(await sync_to_async(lambda: parked_vehicle.exited_at)())
-                    #ak je zaparkovane vozidlo a naskenovala ho vnutorna kamera
+                elif camera_position == "inside":
+                    parked_vehicle = await sync_to_async(lambda: ParkedVehicle.objects.filter(ecv=ecv_object.ecv).order_by("entered_at").last())()
+
                     if parked_vehicle and not await sync_to_async(lambda: parked_vehicle.exited_at)():
-                        #ak je vozidlo v parkovisku viac ako 15 sekund ukonci parkovanie
                         
                         parked_vehicle.exited_at = timezone.now()
                         await sync_to_async(parked_vehicle.save)()
                     else:
                         await sync_to_async(ParkedVehicle.objects.create)(
-                            ecv=registered_ecv,
+                            ecv=ecv_object.ecv,
                             exited_at=timezone.now()
                         )
                         await self.send(text_data=json.dumps({'type': 'error', 'message': 'Vehicle is not parked. Opening anyway'}))
-                    #ak nie je zaparkovane vozidlo a naskenovala ho vnutorna kamera tak otvor branu
                 
                 await sync_to_async(TriggerLog.objects.create)(
                     trigger_type="start_v",
-                    user=await sync_to_async(lambda: registered_ecv.user)(),
-                    ecv=registered_ecv,
+                    user=await sync_to_async(lambda: ecv_object.user)(),
+                    ecv=ecv_object if ecv_type == "registered_ecv" else None,
                     trigger_agent="rpi",
-                    camera_position=camera_position
+                    camera_position=camera_position,
+                    temporary_access=ecv_object if ecv_type == "temp_ecv" else None
                 ) 
                 
                 print("Triggered by rpi")

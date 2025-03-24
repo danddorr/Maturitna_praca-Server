@@ -1,13 +1,13 @@
 # serializers.py
 from rest_framework import serializers
 from django.utils import timezone
-from .models import TemporaryAccess, RegisteredECV, CustomUser
+from .models import TemporaryAccess, RegisteredECV, CustomUser, TriggerLog, GateStateLog
 import secrets
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['username', 'is_admin', 'can_open_vehicle', 'can_open_pedestrian', 'can_close_gate']
+        fields = ['username', 'is_admin', 'can_open_vehicle', 'can_open_pedestrian']
 
 class TemporaryAccessSerializer(serializers.Serializer):  
     access_type = serializers.CharField()
@@ -16,7 +16,6 @@ class TemporaryAccessSerializer(serializers.Serializer):
     valid_until = serializers.DateTimeField()
     open_vehicle = serializers.IntegerField()
     open_pedestrian = serializers.IntegerField()
-    close_gate = serializers.IntegerField()
 
     def validate(self, data):        
         errors = {}
@@ -25,25 +24,20 @@ class TemporaryAccessSerializer(serializers.Serializer):
             errors['ecv'] = "ECV is required"
         
         user = self.context['request'].user
-        if data.get('open_vehicle') == -1 or data.get('open_pedestrian') == -1 or data.get('close_gate') == -1:
+        if data.get('open_vehicle') == -1 or data.get('open_pedestrian') == -1:
             if not user.is_admin:
                 errors['open_vehicle'] = "User does not have permission to grant unlimited access"
                 errors['open_pedestrian'] = "User does not have permission to grant unlimited access"
-                errors['close_gate'] = "User does not have permission to grant unlimited access"
 
         if data.get('open_vehicle') > 10:
             errors['open_vehicle'] = "Maximum value for opening gate for vehicle is 10"
         if data.get('open_pedestrian') > 10:
             errors['open_pedestrian'] = "Maximum value for opening gate for pedestrian is 10"
-        if data.get('close_gate') > 10:
-            errors['close_gate'] = "Maximum value for closing gate is 10"
 
         if data.get('open_vehicle') and not user.can_open_vehicle:
             errors['open_vehicle'] = "User does not have permission to open vehicle gate"
         if data.get('open_pedestrian') and not user.can_open_pedestrian:
             errors['open_pedestrian'] = "User does not have permission to open pedestrian gate"
-        if data.get('close_gate') and not user.can_close_gate:
-            errors['close_gate'] = "User does not have permission to close gate"
 
         if errors:
             raise serializers.ValidationError(errors)
@@ -70,8 +64,6 @@ class TemporaryAccessSerializer(serializers.Serializer):
             raise serializers.ValidationError({"open_vehicle": "You do not have permission to grant open vehicle gate access"})
         if validated_data.get('open_pedestrian') and not user.can_open_pedestrian:
             raise serializers.ValidationError({"open_pedestrian": "You do not have permission to grant open pedestrian gate access"})
-        if validated_data.get('close_gate') and not user.can_close_gate:
-            raise serializers.ValidationError({"close_gate": "You do not have permission to grant close gate access"})
         
         return TemporaryAccess.objects.create(
             user=user,
@@ -81,7 +73,6 @@ class TemporaryAccessSerializer(serializers.Serializer):
             valid_until=validated_data['valid_until'],
             open_vehicle=validated_data['open_vehicle'],
             open_pedestrian=validated_data['open_pedestrian'],
-            close_gate=validated_data['close_gate']
         )
     
     def update(self, instance, validated_data):
@@ -89,7 +80,6 @@ class TemporaryAccessSerializer(serializers.Serializer):
         instance.valid_until = validated_data.get('valid_until', instance.valid_until)
         instance.open_vehicle = validated_data.get('open_vehicle', instance.open_vehicle)
         instance.open_pedestrian = validated_data.get('open_pedestrian', instance.open_pedestrian)
-        instance.close_gate = validated_data.get('close_gate', instance.close_gate)
         instance.save()
         return instance
     
@@ -98,7 +88,7 @@ class TemporaryAccessSerializer(serializers.Serializer):
             return "Pending"
         if instance.valid_until < timezone.now():
             return "Expired"
-        if instance.open_vehicle == 0 and instance.open_pedestrian == 0 and instance.close_gate == 0:
+        if instance.open_vehicle == 0 and instance.open_pedestrian == 0:
             return "Revoked"
         return "Active"
     
@@ -111,7 +101,6 @@ class TemporaryAccessSerializer(serializers.Serializer):
             "valid_until": instance.valid_until,
             "open_vehicle": instance.open_vehicle,
             "open_pedestrian": instance.open_pedestrian,
-            "close_gate": instance.close_gate,
             "status": self.get_status(instance)
         }
     #dummy json
@@ -122,7 +111,6 @@ class TemporaryAccessSerializer(serializers.Serializer):
         "valid_until": "2025-07-10T23:59:59Z",
         "open_vehicle": 1,
         "open_pedestrian": 1,
-        "close_gate": 1
     }
 
     {
@@ -132,6 +120,35 @@ class TemporaryAccessSerializer(serializers.Serializer):
         "valid_until": "2025-07-10T23:59:59Z",
         "open_vehicle": 1,
         "open_pedestrian": 1,
-        "close_gate": 1
     }
     """
+
+class TriggerLogSerializer(serializers.ModelSerializer):
+    ecv_value = serializers.SerializerMethodField()
+    username = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = TriggerLog
+        fields = ['id', 'username', 'ecv_value', 'trigger_agent', 'trigger_type', 'camera_position', 'timestamp', 'temporary_access']
+    
+    def get_ecv_value(self, obj):
+        return obj.ecv.ecv if obj.ecv else None
+    
+    def get_username(self, obj):
+        return obj.user.username if obj.user else None
+
+class GateStateLogSerializer(serializers.ModelSerializer):
+    trigger_info = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = GateStateLog
+        fields = ['id', 'gate_state', 'timestamp', 'trigger', 'trigger_info']
+    
+    def get_trigger_info(self, obj):
+        if obj.trigger:
+            return {
+                'user': obj.trigger.user.username if obj.trigger.user else None,
+                'trigger_type': obj.trigger.trigger_type,
+                'trigger_agent': obj.trigger.trigger_agent
+            }
+        return None

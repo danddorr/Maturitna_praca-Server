@@ -1,9 +1,10 @@
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.views import APIView
 from .models import *
 from django.core.cache import cache
 from rest_framework.permissions import IsAuthenticated
+from .permissions import IsOwner
 from .serializers import *
 
 class IndexView(APIView):
@@ -23,7 +24,6 @@ class GeneralInfoView(APIView):
             "is_admin": request.user.is_admin,
             "can_open_vehicle": request.user.can_open_vehicle,
             "can_open_pedestrian": request.user.can_open_pedestrian,
-            "can_close_gate": request.user.can_close_gate
         }
 
         data = {
@@ -53,7 +53,7 @@ class TemporaryAccessDetailView(APIView):
     def get_permissions(self):
         if self.request.method == "GET":
             return []
-        return [IsAuthenticated()]
+        return [IsAuthenticated(), IsOwner()]
 
     def get(self, request, link):
         access = TemporaryAccess.objects.filter(link=link).first()
@@ -88,4 +88,17 @@ class TemporaryAccessDetailView(APIView):
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response({'message': 'Temporary access not found'}, status=status.HTTP_404_NOT_FOUND)
-     
+
+class UserTriggerLogView(generics.ListAPIView):
+    serializer_class = TriggerLogSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return TriggerLog.objects.filter(user=self.request.user).order_by('-timestamp')
+
+class GateStateLogView(generics.ListAPIView):
+    serializer_class = GateStateLogSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return GateStateLog.objects.all().order_by('-timestamp')
