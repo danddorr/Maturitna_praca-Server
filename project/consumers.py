@@ -156,6 +156,11 @@ class GateConsumer(AsyncWebsocketConsumer):
                         await self.send(text_data=json.dumps({'type': 'error', 'message': 'Unauthorized'}))
                         return 
                     
+                    parked_vehicle = await sync_to_async(lambda: ParkedVehicle.objects.filter(ecv=ecv_object.ecv).order_by("entered_at").last())()
+                    if parked_vehicle and not await sync_to_async(lambda: parked_vehicle.exited_at)():
+                        parked_vehicle.exited_at = timezone.now()
+                        await sync_to_async(parked_vehicle.save)()
+                    
                     if ecv_type == "temp_ecv":
                         await sync_to_async(ecv_object.decrement)("start_v")
                     

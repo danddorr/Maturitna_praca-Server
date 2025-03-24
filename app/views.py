@@ -6,6 +6,7 @@ from django.core.cache import cache
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsOwner
 from .serializers import *
+from datetime import datetime, timedelta
 
 class IndexView(APIView):
     def get(self, request):
@@ -102,3 +103,47 @@ class GateStateLogView(generics.ListAPIView):
     
     def get_queryset(self):
         return GateStateLog.objects.all().order_by('-timestamp')
+
+class ParkedVehicleListView(generics.ListAPIView):
+    serializer_class = ParkedVehicleSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+    
+    def get_queryset(self):
+        return ParkedVehicle.objects.filter(exited_at=None).order_by('entered_at')
+
+class ParkingStatisticsView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        # Get current date and 7 days ago date
+        today = timezone.now().date()
+        week_ago = today - timedelta(days=6)  # 7 days including today
+        
+        # Count current parked vehicles
+        current_parked = ParkedVehicle.objects.filter(exited_at=None).count()
+        
+        # Initialize daily stats dictionary
+        daily_stats = {}
+        for i in range(7):
+            day = week_ago + timedelta(days=i)
+            daily_stats[day.strftime('%Y-%m-%d')] = 0
+        
+        # Calculate daily parked vehicles
+        for day_str in daily_stats.keys():
+            day_date = datetime.strptime(day_str, '%Y-%m-%d').date()
+            next_day = day_date + timedelta(days=1)
+            
+            # Count vehicles that entered on that day
+            count = ParkedVehicle.objects.filter(
+                entered_at__date=day_date
+            ).count()
+            
+            daily_stats[day_str] = count
+        
+        data = {
+            'current_parked': current_parked,
+            'daily_stats': daily_stats
+        }
+        
+        return Response(data, status=status.HTTP_200_OK)

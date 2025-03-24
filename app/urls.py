@@ -8,4 +8,6 @@ urlpatterns = [
     path('temporary-access/<str:link>/', TemporaryAccessDetailView.as_view(), name='temporary-access-detail'),
     path('triggers/', UserTriggerLogView.as_view(), name='triggers'),
     path('states/', GateStateLogView.as_view(), name='states'),
+    path('parking/', ParkedVehicleListView.as_view(), name='parked-vehicles'),
+    path('parking/statistics/', ParkingStatisticsView.as_view(), name='parking-statistics'),
 ]

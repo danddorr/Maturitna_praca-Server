@@ -1,7 +1,7 @@
 # serializers.py
 from rest_framework import serializers
 from django.utils import timezone
-from .models import TemporaryAccess, RegisteredECV, CustomUser, TriggerLog, GateStateLog
+from .models import TemporaryAccess, RegisteredECV, CustomUser, TriggerLog, GateStateLog, ParkedVehicle
 import secrets
 
 class UserSerializer(serializers.ModelSerializer):
@@ -152,3 +152,8 @@ class GateStateLogSerializer(serializers.ModelSerializer):
                 'trigger_agent': obj.trigger.trigger_agent
             }
         return None
+
+class ParkedVehicleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ParkedVehicle
+        fields = ['id', 'ecv', 'entered_at', 'exited_at']
