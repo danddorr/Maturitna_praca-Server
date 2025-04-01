@@ -30,7 +30,7 @@ class GateConsumer(AsyncWebsocketConsumer):
         elif not self.scope["user"].is_anonymous:
             self.group_name = "gate_client"
             self.scope["agent"] = "user"
-        elif temp_access:
+        elif  temp_access_link:
             self.group_name = "gate_client"
             self.scope["agent"] = "temp"
             self.scope["user"] = await sync_to_async(lambda: temp_access.user)()
@@ -44,8 +44,8 @@ class GateConsumer(AsyncWebsocketConsumer):
         )
  
         await self.accept()
-        await self.send(text_data=json.dumps({'type': 'success', 'message': f'Connected to {self.group_name} as {self.scope["user"].username if self.scope["agent"] == "user" else "temp_access"}'}))
-
+        await self.send(text_data=json.dumps({'type': 'success', 'message': f'Connected to {self.group_name} as {self.scope["user"].username if self.scope["agent"] != "temp" else "temp_access"}'}))
+ 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
             self.group_name,

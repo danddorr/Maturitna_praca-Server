@@ -123,6 +123,35 @@ class TemporaryAccessSerializer(serializers.Serializer):
     }
     """
 
+class RegisteredECVSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RegisteredECV
+        fields = ['id', 'ecv', 'is_allowed', 'created_at']
+        read_only_fields = ['created_at']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make is_allowed read-only for non-admin users
+        request = self.context.get('request')
+        if request and request.user and not request.user.is_admin:
+            # Add is_allowed to read_only_fields
+            if 'is_allowed' not in self.Meta.read_only_fields:
+                self.Meta.read_only_fields = list(self.Meta.read_only_fields) + ['is_allowed']
+        
+    def validate_ecv(self, value):
+        user = self.context['request'].user
+        # Check if this ECV exists but belongs to another user
+        existing = RegisteredECV.objects.filter(ecv=value).first()
+        if existing and existing.user != user and (not self.instance or self.instance.id != existing.id):
+            raise serializers.ValidationError("This license plate is already registered by another user")
+        return value
+        
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        validated_data['is_allowed'] = True # IBA PRE TESTOVANIE
+        validated_data['ecv'] = validated_data['ecv'].upper()
+        return super().create(validated_data)
+
 class TriggerLogSerializer(serializers.ModelSerializer):
     ecv_value = serializers.SerializerMethodField()
     username = serializers.SerializerMethodField()

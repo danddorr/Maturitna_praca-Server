@@ -1,5 +1,5 @@
 from rest_framework.response import Response
-from rest_framework import status, generics
+from rest_framework import status, generics, viewsets
 from rest_framework.views import APIView
 from .models import *
 from django.core.cache import cache
@@ -147,3 +147,14 @@ class ParkingStatisticsView(APIView):
         }
         
         return Response(data, status=status.HTTP_200_OK)
+
+class RegisteredECVViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing registered license plates (ECVs)
+    """
+    serializer_class = RegisteredECVSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Returns only ECVs belonging to the current user"""
+        return RegisteredECV.objects.filter(user=self.request.user).order_by('-created_at')
