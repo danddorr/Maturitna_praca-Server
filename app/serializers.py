@@ -155,16 +155,22 @@ class RegisteredECVSerializer(serializers.ModelSerializer):
 class TriggerLogSerializer(serializers.ModelSerializer):
     ecv_value = serializers.SerializerMethodField()
     username = serializers.SerializerMethodField()
+    temporary_access_link = serializers.SerializerMethodField()
     
     class Meta:
         model = TriggerLog
-        fields = ['id', 'username', 'ecv_value', 'trigger_agent', 'trigger_type', 'camera_position', 'timestamp', 'temporary_access']
+        fields = ['id', 'username', 'ecv_value', 'trigger_agent', 'trigger_type', 'camera_position', 'timestamp', 'temporary_access_link']
     
     def get_ecv_value(self, obj):
         return obj.ecv.ecv if obj.ecv else None
     
     def get_username(self, obj):
         return obj.user.username if obj.user else None
+    
+    def get_temporary_access_link(self, obj):
+        if obj.temporary_access:
+            return obj.temporary_access.link
+        return None
 
 class GateStateLogSerializer(serializers.ModelSerializer):
     trigger_info = serializers.SerializerMethodField()
