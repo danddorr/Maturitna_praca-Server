@@ -1,0 +1,46 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36" version="26.2.8">
+  <diagram id="1jTV7QtE0jiicnQG9--T" name="Page-1">
+    <mxGraphModel dx="1428" dy="751" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="NxUkEKfoGYNH_WXZvajT-1" value="" style="whiteSpace=wrap;html=1;strokeColor=#6c8ebf;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="600" y="250" width="210" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="NxUkEKfoGYNH_WXZvajT-2" value="" style="whiteSpace=wrap;html=1;strokeColor=#82b366;fillColor=#d5e8d4;" vertex="1" parent="1">
+          <mxGeometry x="600" y="127.5" width="210" height="122.5" as="geometry" />
+        </mxCell>
+        <mxCell id="NxUkEKfoGYNH_WXZvajT-3" value="" style="whiteSpace=wrap;html=1;strokeColor=#6c8ebf;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="240" y="127.5" width="360" height="232.5" as="geometry" />
+        </mxCell>
+        <mxCell id="NxUkEKfoGYNH_WXZvajT-4" value="" style="whiteSpace=wrap;html=1;strokeColor=#d6b656;fillColor=#fff2cc;" vertex="1" parent="1">
+          <mxGeometry x="240" y="32.5" width="360" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="NxUkEKfoGYNH_WXZvajT-6" value="&lt;b&gt;Pokyn na otvorenie&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="325" y="50" width="190" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="NxUkEKfoGYNH_WXZvajT-14" value="Klient" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="240" y="32.5" width="50" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="NxUkEKfoGYNH_WXZvajT-15" value="Server" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="235" y="127.5" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="NxUkEKfoGYNH_WXZvajT-18" value="&lt;b&gt;Django - Python&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="325" y="214.75" width="190" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="NxUkEKfoGYNH_WXZvajT-20" value="&lt;b&gt;Brána&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="645" y="169.38" width="120" height="48.75" as="geometry" />
+        </mxCell>
+        <mxCell id="NxUkEKfoGYNH_WXZvajT-21" value="Hardvér" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="595" y="127.5" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="NxUkEKfoGYNH_WXZvajT-27" value="Databáza" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="600" y="250" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="NxUkEKfoGYNH_WXZvajT-28" value="&lt;b&gt;PostgreSQL&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="650" y="290" width="115" height="50" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
