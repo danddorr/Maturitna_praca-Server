@@ -102,7 +102,7 @@ class GateStateLogView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
-        return GateStateLog.objects.exclude(state="not_closed").order_by('-timestamp')
+        return GateStateLog.objects.exclude(gate_state="not_closed").order_by('-timestamp')
 
 class ParkedVehicleListView(generics.ListAPIView):
     serializer_class = ParkedVehicleSerializer
