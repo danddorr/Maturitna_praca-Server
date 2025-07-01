@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "ecv-detection"
+version = "0.1.0"
+description = ""
+authors = ["danddorr <120369188+danddorr@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+opencv-python = "^4.9.0"
+numpy = "^1.26.4"
+ultralytics = "^8.2.2"
+paddlepaddle = "^2.6.1"
+paddleocr = "^2.7.3"
+websocket-client = "^1.8.0"
+
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
